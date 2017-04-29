@@ -1,0 +1,34 @@
+<!doctype html>
+<html class="no-js" lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hearthstone Win Tracker</title>
+    <link rel="stylesheet" href="../static/css/foundation.css">
+    <link rel="stylesheet" href="../static/css/app.css">
+</head>
+<body>
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <ul class="menu">
+                <li class="menu-text"><a href="{{ url_for("show_entries") }}">Hearthstone Win Tracker</a></li>
+                <li><a href="#">Add game</a></li>
+                <li><a href="{{ url_for("add_deck") }}">Add deck</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- @TODO: style the flash, put in a row? give background color? -->
+    {% for message in get_flashed_messages() %}
+        <div class="flash">{{ message }}</div>
+    {% endfor %}
+
+    {% block body %}{% endblock %}
+
+    <script src="../static/js/jquery.js"></script>
+    <script src="../static/js/what-input.js"></script>
+    <script src="../static/js/foundation.js"></script>
+    <script src="../static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block body %}
+    <form action="{{ url_for("add_deck") }}" method="post">
+        <div class="row">
+            <div class="small-4 columns">
+                <label>Deck name
+                    <input type="text" placeholder="Face Hunter" name="deck_name">
+                </label>
+            </div>
+            <div class="small-4 columns">
+                <label>Class
+                    <select name="class_name">
+                        {% for class in classes %}
+                            <option value="{{ class }}">{{ class }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="small-4 columns">
+                <input class="button" type="submit" value="Add deck">
+            </div>
+        </div>
+    </form>
+{% endblock %}
