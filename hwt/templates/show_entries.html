@@ -9,29 +9,25 @@
     <div class="row columns">
         {% if deck_info %}
             <ul class="accordion" data-accordion data-multi-expand="true" data-allow-all-closed="true">
-            {% for deck in deck_info %}
+            {% for deck in deck_info if deck %}
                 <li class="accordion-item" data-accordion-item>
                     <a href="#" class="accordion-title">
                         <div class="row">
-                            <div class="small-4 columns"><h4>{{ deck.name }}</h4></div>
-                            <div class="small-3 columns"><h4>9</h4></div>
-                            <div class="small-3 columns"><h4>3</h4></div>
-                            <div class="small-2 columns"><h4>75 %</h4></div>
+                            <div class="small-4 columns"><h4>{{ deck[0].player }}</h4></div>
+                            <div class="small-3 columns"><h4>{{ deck[0].sumwins }}</h4></div>
+                            <div class="small-3 columns"><h4>{{ deck[0].sumlosses }}</h4></div>
+                            <div class="small-2 columns"><h4>{{ deck[0].wins / (deck[0].wins + deck[0].losses) }} %</h4></div>
                         </div>
                     </a>
                     <div class="accordion-content" data-tab-content>
-                        <div class="row">
-                            <div class="small-4 columns">A deck name</div>
-                            <div class="small-3 columns">5</div>
-                            <div class="small-3 columns">3</div>
-                            <div class="small-2 columns">62.5 %</div>
-                        </div>
-                        <div class="row">
-                            <div class="small-4 columns">Another deck name</div>
-                            <div class="small-3 columns">4</div>
-                            <div class="small-3 columns">0</div>
-                            <div class="small-2 columns">100 %</div>
-                        </div>
+                        {% for games in deck if games %}
+                            <div class="row">
+                                <div class="small-4 columns">{{ games.enemy }}</div>
+                                <div class="small-3 columns">{{ games.wins }}</div>
+                                <div class="small-3 columns">{{ games.losses }}</div>
+                                <div class="small-2 columns">{{ games.wins / (games.wins + games.losses) }} %</div>
+                            </div>
+                        {% endfor %}
                     </div>
                 </li>
             {% endfor %}

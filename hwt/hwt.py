@@ -19,8 +19,9 @@ def show_entries():
     db = get_db()
     cur = db.execute(query)
     deck_info = cur.fetchall()
-    get_all_deck_info()
-    return render_template("show_entries.html", messages=messages, deck_info=deck_info)
+    decks = get_all_deck_info()
+    print(decks)
+    return render_template("show_entries.html", messages=messages, deck_info=decks)
 
 
 @app.route("/add_deck", methods=["GET", "POST"])
@@ -33,22 +34,23 @@ def add_deck():
         try:
             db.execute(query, [request.form["deck_name"], request.form["class_name"]])
             db.commit()
-            # @TODO: figure out how to exchange table name to a ?
-            tablename = "d_" + request.form["deck_name"].replace(" ", "_")
+            table_name = "d_" + request.form["deck_name"].replace(" ", "_")
             query = "CREATE TABLE {} (" \
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," \
                     "player INTEGER REFERENCES decks(id)," \
                     "enemy INTEGER REFERENCES decks(id)," \
                     "wins INTEGER," \
                     "losses INTEGER" \
-                    ")".format(tablename)
+                    ")".format(table_name)
             db.execute(query)
             db.commit()
             flash("Deck was successfully added.")
             return redirect(url_for("show_entries"))
         except sqlite3.IntegrityError as e:
-            #print("Integrity error.")
+            # print("Integrity error.")
             flash("A deck with that name already exists.")
+        except sqlite3.Error:
+            flash("Something went wrong, try again.")
 
     return render_template("add_deck.html", classes=classes)
 
@@ -59,7 +61,6 @@ def add_game():
     query = "SELECT name FROM decks;"
     cur = db.execute(query)
     decks = cur.fetchall()
-    get_deck_info("hej")
 
     if request.method == "POST":
         print(request.form["player_deck"])
@@ -77,19 +78,23 @@ def get_all_deck_info():
     deck_info = []
     for name in deck_names:
         deck_info.append(get_deck_info(name[0]))
-    pass
+
+    return deck_info
 
 
 def get_deck_info(deck_name):
-    deck_name = "d_" + deck_name
+    table_name = "d_" + deck_name.replace(" ", "_")
     db = get_db()
-    query = "SELECT d1.name, d2.name, wins, losses, d1.class " \
+    query = "SELECT d1.name AS player, d2.name AS enemy, wins, losses, " \
+            "SUM(wins) AS sumwins, SUM(losses) AS sumlosses, d1.class AS class " \
             "FROM {} " \
-            "LEFt JOIN decks d1 ON ({}.player = d1.id) " \
-            "LEFT JOIN decks d2 on ({}.enemy = d2.id);".format(deck_name, deck_name, deck_name)
+            "LEFT JOIN decks d1 ON ({}.player = d1.id) " \
+            "LEFT JOIN decks d2 on ({}.enemy = d2.id);".format(table_name, table_name, table_name)
     cur = db.execute(query)
     deck_info = cur.fetchall()
-    print(deck_info)
+    # @TODO: aggregate and format data
+    return deck_info
+    # print(deck_info)
 
 
 def get_db():
@@ -124,7 +129,3 @@ def connect_db():
 
 if __name__ == '__main__':
     app.run()
-
-"""
-/*SELECT d1.name, d2.name, wins, losses FROM d_hej LEFT JOIN decks d1 ON (d_hej.player = d1.id) LEFT JOIN decks d2 ON (d_hej.enemy = d2.id); */
-"""
