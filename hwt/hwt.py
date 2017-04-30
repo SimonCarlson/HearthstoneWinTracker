@@ -19,12 +19,12 @@ def show_entries():
     db = get_db()
     cur = db.execute(query)
     deck_info = cur.fetchall()
+    get_all_deck_info()
     return render_template("show_entries.html", messages=messages, deck_info=deck_info)
 
 
 @app.route("/add_deck", methods=["GET", "POST"])
 def add_deck():
-    error = None
     classes = ["Druid", "Hunter", "Mage", "Paladin", "Priest", "Rogue", "Shaman", "Warlock", "Warrior"]
 
     if request.method == "POST":
@@ -50,8 +50,46 @@ def add_deck():
             #print("Integrity error.")
             flash("A deck with that name already exists.")
 
+    return render_template("add_deck.html", classes=classes)
 
-    return render_template("add_deck.html", error=error, classes=classes)
+
+@app.route("/add_game", methods=["GET", "POST"])
+def add_game():
+    db = get_db()
+    query = "SELECT name FROM decks;"
+    cur = db.execute(query)
+    decks = cur.fetchall()
+    get_deck_info("hej")
+
+    if request.method == "POST":
+        print(request.form["player_deck"])
+        print(request.form["enemy_deck"])
+        print(request.form["win"])
+
+    return render_template("add_game.html", decks=decks)
+
+
+def get_all_deck_info():
+    db = get_db()
+    query = "SELECT name FROM decks;"
+    cur = db.execute(query)
+    deck_names = cur.fetchall()
+    deck_info = []
+    for name in deck_names:
+        deck_info.append(get_deck_info(name[0]))
+    pass
+
+
+def get_deck_info(deck_name):
+    deck_name = "d_" + deck_name
+    db = get_db()
+    query = "SELECT d1.name, d2.name, wins, losses, d1.class " \
+            "FROM {} " \
+            "LEFt JOIN decks d1 ON ({}.player = d1.id) " \
+            "LEFT JOIN decks d2 on ({}.enemy = d2.id);".format(deck_name, deck_name, deck_name)
+    cur = db.execute(query)
+    deck_info = cur.fetchall()
+    print(deck_info)
 
 
 def get_db():
@@ -86,3 +124,7 @@ def connect_db():
 
 if __name__ == '__main__':
     app.run()
+
+"""
+/*SELECT d1.name, d2.name, wins, losses FROM d_hej LEFT JOIN decks d1 ON (d_hej.player = d1.id) LEFT JOIN decks d2 ON (d_hej.enemy = d2.id); */
+"""
