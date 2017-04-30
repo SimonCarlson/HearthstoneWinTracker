@@ -24,8 +24,8 @@ class HwtTestCase(unittest.TestCase):
 
     def add_deck_data(self, deck_name, enemy_name, win):
         return self.app.post("/add_game", data=dict(
-            deck_name=deck_name,
-            enemy_name=enemy_name,
+            player_deck=deck_name,
+            enemy_deck=enemy_name,
             win=win
         ), follow_redirects=True)
 
@@ -41,17 +41,23 @@ class HwtTestCase(unittest.TestCase):
         rv = self.add_deck("test deck", "Druid")
         assert b"A deck with that name already exists." in rv.data
 
-    def test_get_decks(self):
+    def test_dont_show_decks_with_no_games(self):
         self.add_deck("test deck", "Druid")
         rv = self.get_decks()
-        assert b"test deck" in rv.data
+        assert b"<h4>test deck</h4>" not in rv.data
+
+    def test_show_decks_with_games(self):
+        self.add_deck("test deck", "Druid")
+        self.add_deck("bad test deck", "Rogue")
+        rv = self.add_deck_data("test deck", "bad test deck", "win")
+        assert b"<h4>test deck</h4>" in rv.data
+        assert b"<h4>bad test deck</h4>" not in rv.data
 
     def test_create_deck_table(self):
         self.add_deck("test deck", "Druid")
         self.add_deck("bad test deck", "Rogue")
-        rv = self.add_deck_data("test deck", "bad test deck", True)
-        rv = self.add_deck_data("test deck", "bad test deck", True)
-        assert b"<h4>2</h4>" in rv.data
+        rv = self.add_deck_data("test deck", "bad test deck", "win")
+        assert b"Game was successfully added." in rv.data
 
 if __name__ == "__main__":
     unittest.main()
