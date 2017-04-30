@@ -51,7 +51,7 @@ class HwtTestCase(unittest.TestCase):
         self.add_deck("bad test deck", "Rogue")
         rv = self.add_deck_data("test deck", "bad test deck", True)
         rv = self.add_deck_data("test deck", "bad test deck", True)
-        assert b"bad test deck 2-0" in rv.data
+        assert b"<h4>2</h4>" in rv.data
 
 if __name__ == "__main__":
     unittest.main()
