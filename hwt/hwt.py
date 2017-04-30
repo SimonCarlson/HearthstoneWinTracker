@@ -14,14 +14,8 @@ app.config.from_envvar("HWT_SETTINGS", silent=True)
 
 @app.route("/")
 def show_entries():
-    messages = "hello"
-    query = "SELECT name FROM decks;"
-    db = get_db()
-    cur = db.execute(query)
-    deck_info = cur.fetchall()
     decks = get_all_deck_info()
-    print(decks)
-    return render_template("show_entries.html", messages=messages, deck_info=decks)
+    return render_template("show_entries.html", deck_info=decks)
 
 
 @app.route("/add_deck", methods=["GET", "POST"])
@@ -63,9 +57,69 @@ def add_game():
     decks = cur.fetchall()
 
     if request.method == "POST":
-        print(request.form["player_deck"])
-        print(request.form["enemy_deck"])
-        print(request.form["win"])
+        player_deck = request.form["player_deck"]
+        enemy_deck = request.form["enemy_deck"]
+        print("PLAYER DECK: " + player_deck)
+        print("ENEMY DECK: " + enemy_deck)
+        win = request.form["win"]
+        table_name = "d_" + request.form["player_deck"].replace(" ", "_")
+
+        query = "SELECT id FROM {} " \
+                "WHERE player = " \
+                "(SELECT id FROM decks WHERE name = '{}') " \
+                "AND enemy = " \
+                "(SELECT id FROM decks WHERE name = '{}');".format(table_name, player_deck, enemy_deck)
+        cur = db.execute(query)
+        row_id = cur.fetchone()
+
+        if row_id is not None:
+            print("UPDATING EXISTING ROW. ID: " + str(row_id[0]))
+            # there is a row for that player deck and enemy deck, update it
+            if win == "win":
+                print("IT WAS A WIN.")
+                query = "UPDATE {} " \
+                        "SET wins = " \
+                        "(SELECT wins FROM {} WHERE id = {}) + 1 " \
+                        "WHERE id = {};".format(table_name, table_name, row_id[0], row_id[0])
+                db.execute(query)
+                db.commit()
+            else:
+                print("IT WAS A LOSS.")
+                query = "UPDATE {} " \
+                        "SET losses = " \
+                        "(SELECT losses FROM {} WHERE id = {}) + 1 " \
+                        "WHERE id = {};".format(table_name, table_name, row_id[0], row_id[0])
+                db.execute(query)
+                db.commit()
+        else:
+            print("CREATING A NEW ROW.")
+            # there is no row, it has to be created
+            query = "SELECT id FROM decks WHERE name = '{}' OR name = '{}';".format(player_deck, enemy_deck)
+            cur = db.execute(query)
+            ids = cur.fetchall()
+            player_id = ids[0][0]
+            if len(ids) is 1:
+                enemy_id = player_id
+            else:
+                enemy_id = ids[1][0]
+
+            print("PLAYER IDS: " + str(player_id) + " " + str(enemy_id))
+
+            if win == "win":
+                print("IT WAS A WIN.")
+                query = "INSERT INTO {} " \
+                        "VALUES (NULL, {}, {}, 1, 0);".format(table_name, player_id, enemy_id)
+                db.execute(query)
+                db.commit()
+            else:
+                print("IT WAS A LOSS.")
+                query = "INSERT INTO {} " \
+                        "VALUES (NULL, {}, {}, 0, 1);".format(table_name, player_id, enemy_id)
+                db.execute(query)
+                db.commit()
+
+        flash("Game was successfully added.")
+        return redirect(url_for("show_entries"))
 
     return render_template("add_game.html", decks=decks)
 
