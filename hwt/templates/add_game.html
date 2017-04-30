@@ -1,10 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-
-</body>
-</html>
+{% extends "layout.html" %}
+{% block body %}
+    <form action="{{ url_for("add_game") }}" method="post">
+        <div class="row">
+            <div class="small-4 columns">
+                <label>Your deck
+                    <select name="player_deck">
+                        {% for deck in decks %}
+                            <option value="{{ deck.name }}">{{ deck.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="small-4 columns">
+                <label>Opponents deck
+                    <select name="enemy_deck">
+                        {% for deck in decks %}
+                            <option value="{{ deck.name }}">{{ deck.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="small-2 columns">
+                <fieldset>
+                    <legend>Win or loss?</legend>
+                    <input type="radio" name="win" value="win" id="win"><label for="win">Win</label>
+                    <input type="radio" name="win" value="loss" id="loss"><label for="loss">Loss</label>
+                </fieldset>
+            </div>
+            <div class="small-2 columns">
+                <input class="button" type="submit" value="Add game">
+            </div>
+        </div>
+    </form>
+{% endblock %}
