@@ -2,3 +2,4 @@
 *.iml
 hwt.egg-info/
 hwt/__pycache__/
+hwt/hwt.db

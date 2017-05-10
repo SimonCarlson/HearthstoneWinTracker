@@ -146,6 +146,7 @@ def delete_deck():
             scrub_table_name(table_name)
         except NameError:
             flash("Invalid deck name. Only use alphabetical characters, numbers and whitespaces.")
+            return render_template("delete_deck.html", decks=decks)
 
         query = "DELETE FROM decks " \
                 "WHERE name = ?;"
@@ -186,6 +187,8 @@ def get_deck_info(deck_name):
         scrub_table_name(table_name)
     except NameError:
         flash("Invalid deck name. Only use alphabetical characters, numbers and whitespaces.")
+        return
+
     db = get_db()
 
     # gets players total wins and losses
