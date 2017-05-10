@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import re
 from flask import Flask, render_template, g, request, flash, redirect, url_for
 
 app = Flask(__name__)
@@ -10,8 +11,6 @@ app.config.update(dict(
     SECRET_KEY="development key",
 ))
 app.config.from_envvar("HWT_SETTINGS", silent=True)
-
-# @TODO: remove prints
 
 
 @app.route("/")
@@ -25,12 +24,17 @@ def add_deck():
     classes = ["Druid", "Hunter", "Mage", "Paladin", "Priest", "Rogue", "Shaman", "Warlock", "Warrior"]
 
     if request.method == "POST":
+
         db = get_db()
         query = "INSERT INTO decks (name, class) VALUES (?, ?)"
         try:
-            db.execute(query, [request.form["deck_name"], request.form["class_name"]])
-            db.commit()
+            # scrub the name
+            # if it doesnt' work, abort and notify user
             table_name = get_table_name(request.form["deck_name"])
+            scrub_table_name(table_name)
+
+            db.execute(query, [request.form["deck_name"], request.form["class_name"]])
+
             query = "CREATE TABLE {} (" \
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," \
                     "player INTEGER REFERENCES decks(id) ON DELETE CASCADE," \
@@ -42,10 +46,12 @@ def add_deck():
             db.commit()
             flash("Deck was successfully added.")
             return redirect(url_for("show_entries"))
+        except NameError:
+            flash("Invalid deck name. Only use alphabetical characters, numbers and whitespaces.")
         except sqlite3.IntegrityError:
             flash("A deck with that name already exists.")
         except sqlite3.Error:
-            flash("Something went wrong, try again.")
+            flash("Something went wrong. Try again.")
 
     return render_template("add_deck.html", classes=classes)
 
@@ -62,13 +68,21 @@ def add_game():
         enemy_deck = request.form["enemy_deck"]
         win = request.form["win"]
         table_name = get_table_name(request.form["player_deck"])
+        try:
+            scrub_table_name(table_name)
+            scrub_table_name(player_deck)
+            scrub_table_name(enemy_deck)
+        except NameError:
+            flash("Invalid deck name. Only use alphabetical characters, numbers and whitespaces.")
+            return render_template("add_game.html", decks=decks)
 
+        # get the primary key of the matchup
         query = "SELECT id FROM {} " \
                 "WHERE player = " \
-                "(SELECT id FROM decks WHERE name = '{}') " \
+                "(SELECT id FROM decks WHERE name = ?) " \
                 "AND enemy = " \
-                "(SELECT id FROM decks WHERE name = '{}');".format(table_name, player_deck, enemy_deck)
-        cur = db.execute(query)
+                "(SELECT id FROM decks WHERE name = ?);".format(table_name)
+        cur = db.execute(query, [player_deck, enemy_deck])
         row_id = cur.fetchone()
 
         if row_id is not None:
@@ -76,37 +90,41 @@ def add_game():
             if win == "win":
                 query = "UPDATE {} " \
                         "SET wins = " \
-                        "(SELECT wins FROM {} WHERE id = {}) + 1 " \
-                        "WHERE id = {};".format(table_name, table_name, row_id[0], row_id[0])
+                        "(SELECT wins FROM {} WHERE id = ?) + 1 " \
+                        "WHERE id = ?;".format(table_name, table_name)
             else:
                 query = "UPDATE {} " \
                         "SET losses = " \
-                        "(SELECT losses FROM {} WHERE id = {}) + 1 " \
-                        "WHERE id = {};".format(table_name, table_name, row_id[0], row_id[0])
+                        "(SELECT losses FROM {} WHERE id = ?) + 1 " \
+                        "WHERE id = ?;".format(table_name, table_name)
 
-            db.execute(query)
+            db.execute(query, [row_id[0], row_id[0]])
             db.commit()
         else:
             # there is no row, it has to be created
-            # @TODO: get both ids in one query?
-            query = "SELECT id FROM decks WHERE name = '{}';".format(player_deck)
-            cur = db.execute(query)
-            ids = cur.fetchone()
-            player_id = ids[0]
+            try:
+                # @TODO: get both ids in one query?
+                query = "SELECT id FROM decks WHERE name = '{}';".format(player_deck)
+                cur = db.execute(query)
+                ids = cur.fetchone()
+                player_id = ids[0]
 
-            query = "SELECT id FROM decks WHERE name = '{}';".format(enemy_deck)
-            cur = db.execute(query)
-            ids = cur.fetchone()
-            enemy_id = ids[0]
+                query = "SELECT id FROM decks WHERE name = '{}';".format(enemy_deck)
+                cur = db.execute(query)
+                ids = cur.fetchone()
+                enemy_id = ids[0]
+            except TypeError:
+                flash("Invalid deck names were provided. Try again.")
+                return render_template("add_game.html", decks=decks)
 
             if win == "win":
                 query = "INSERT INTO {} " \
-                        "VALUES (NULL, {}, {}, 1, 0);".format(table_name, player_id, enemy_id)
+                        "VALUES (NULL, ?, ?, 1, 0);".format(table_name)
             else:
                 query = "INSERT INTO {} " \
-                        "VALUES (NULL, {}, {}, 0, 1);".format(table_name, player_id, enemy_id)
+                        "VALUES (NULL, ?, ?, 0, 1);".format(table_name)
 
-            db.execute(query)
+            db.execute(query, [player_id, enemy_id])
             db.commit()
 
         flash("Game was successfully added.")
@@ -124,10 +142,14 @@ def delete_deck():
 
     if request.method == "POST":
         table_name = get_table_name(request.form["deck_name"])
+        try:
+            scrub_table_name(table_name)
+        except NameError:
+            flash("Invalid deck name. Only use alphabetical characters, numbers and whitespaces.")
 
         query = "DELETE FROM decks " \
-                "WHERE name = '{}';".format(request.form["deck_name"])
-        db.execute(query)
+                "WHERE name = ?;"
+        db.execute(query, [request.form["deck_name"]])
 
         query = "DROP TABLE {};".format(table_name)
         db.execute(query)
@@ -137,6 +159,13 @@ def delete_deck():
         return redirect(url_for("show_entries"))
 
     return render_template("delete_deck.html", decks=decks)
+
+
+def scrub_table_name(table_name):
+    regex = re.compile("(\w*\s*)*")
+    match = regex.match(table_name)
+    if match.group() is not table_name:
+        raise NameError("Invalid deck name.")
 
 
 def get_all_deck_info():
@@ -153,6 +182,10 @@ def get_all_deck_info():
 
 def get_deck_info(deck_name):
     table_name = get_table_name(deck_name)
+    try:
+        scrub_table_name(table_name)
+    except NameError:
+        flash("Invalid deck name. Only use alphabetical characters, numbers and whitespaces.")
     db = get_db()
 
     # gets players total wins and losses
