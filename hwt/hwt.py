@@ -17,18 +17,6 @@ app.config.from_envvar("HWT_SETTINGS", silent=True)
 @app.route("/")
 def show_entries():
     decks = get_all_deck_info()
-    # print(decks)
-    # @TODO: reformat row data so its understandable and contains total wins/losses
-    for d in decks:
-        print(d)
-        for k in row_to_list(d):
-            #print(k)
-            pass
-        #for d1 in d:
-            #print(d1["player"])
-            #for k in d1:
-                #print(k)
-                #pass
     return render_template("show_entries.html", deck_info=decks)
 
 
@@ -59,8 +47,7 @@ def add_deck():
             db.commit()
             flash("Deck was successfully added.")
             return redirect(url_for("show_entries"))
-        except sqlite3.IntegrityError as e:
-            # print("Integrity error.")
+        except sqlite3.IntegrityError:
             flash("A deck with that name already exists.")
         except sqlite3.Error:
             flash("Something went wrong, try again.")
@@ -78,8 +65,6 @@ def add_game():
     if request.method == "POST":
         player_deck = request.form["player_deck"]
         enemy_deck = request.form["enemy_deck"]
-        # print("PLAYER DECK: " + player_deck)
-        # print("ENEMY DECK: " + enemy_deck)
         win = request.form["win"]
         table_name = get_table_name(request.form["player_deck"])
 
@@ -92,16 +77,13 @@ def add_game():
         row_id = cur.fetchone()
 
         if row_id is not None:
-            # print("UPDATING EXISTING ROW. ID: " + str(row_id[0]))
             # there is a row for that player deck and enemy deck, update it
             if win == "win":
-                # print("IT WAS A WIN.")
                 query = "UPDATE {} " \
                         "SET wins = " \
                         "(SELECT wins FROM {} WHERE id = {}) + 1 " \
                         "WHERE id = {};".format(table_name, table_name, row_id[0], row_id[0])
             else:
-                # print("IT WAS A LOSS.")
                 query = "UPDATE {} " \
                         "SET losses = " \
                         "(SELECT losses FROM {} WHERE id = {}) + 1 " \
@@ -110,9 +92,8 @@ def add_game():
             db.execute(query)
             db.commit()
         else:
-            # print("CREATING A NEW ROW.")
             # there is no row, it has to be created
-            # @TODO: form a better query..
+            # @TODO: get both ids in one query?
             query = "SELECT id FROM decks WHERE name = '{}';".format(player_deck)
             cur = db.execute(query)
             ids = cur.fetchone()
@@ -123,14 +104,10 @@ def add_game():
             ids = cur.fetchone()
             enemy_id = ids[0]
 
-            # print("PLAYER IDS: " + str(player_id) + " " + str(enemy_id))
-
             if win == "win":
-                # print("IT WAS A WIN.")
                 query = "INSERT INTO {} " \
                         "VALUES (NULL, {}, {}, 1, 0);".format(table_name, player_id, enemy_id)
             else:
-                # print("IT WAS A LOSS.")
                 query = "INSERT INTO {} " \
                         "VALUES (NULL, {}, {}, 0, 1);".format(table_name, player_id, enemy_id)
 
@@ -158,6 +135,7 @@ def get_all_deck_info():
 def get_deck_info(deck_name):
     table_name = get_table_name(deck_name)
     db = get_db()
+
     # gets players total wins and losses
     query = "SELECT SUM(wins) AS wins, SUM(losses) AS losses " \
             "FROM {};".format(table_name)
@@ -191,6 +169,7 @@ def get_deck_info(deck_name):
 def get_table_name(deck_name):
     return "d_" + deck_name.replace(" ", "_")
 
+
 def get_db():
     if not hasattr(g, "db"):
         g.db = connect_db()
@@ -223,5 +202,3 @@ def connect_db():
 
 if __name__ == '__main__':
     app.run()
-
-# select d1.name, d2.name, wins, losses from d_test1 left join decks d1 on d_test1.player=d1.id left join decks d2 on d_test1.enemy=d2.id
