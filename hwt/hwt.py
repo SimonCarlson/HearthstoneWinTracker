@@ -11,22 +11,30 @@ app.config.update(dict(
 ))
 app.config.from_envvar("HWT_SETTINGS", silent=True)
 
+# @TODO: remove prints
+
 
 @app.route("/")
 def show_entries():
     decks = get_all_deck_info()
     # print(decks)
+    # @TODO: reformat row data so its understandable and contains total wins/losses
     for d in decks:
-        for d1 in d:
-            # print(d1)
-            for k in d1:
-                # print(k)
-                pass
+        print(d)
+        for k in row_to_list(d):
+            #print(k)
+            pass
+        #for d1 in d:
+            #print(d1["player"])
+            #for k in d1:
+                #print(k)
+                #pass
     return render_template("show_entries.html", deck_info=decks)
 
 
 def row_to_list(row):
-    pass
+    for item in row:
+        yield item
 
 
 @app.route("/add_deck", methods=["GET", "POST"])
@@ -39,7 +47,7 @@ def add_deck():
         try:
             db.execute(query, [request.form["deck_name"], request.form["class_name"]])
             db.commit()
-            table_name = "d_" + request.form["deck_name"].replace(" ", "_")
+            table_name = get_table_name(request.form["deck_name"])
             query = "CREATE TABLE {} (" \
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," \
                     "player INTEGER REFERENCES decks(id)," \
@@ -73,7 +81,7 @@ def add_game():
         # print("PLAYER DECK: " + player_deck)
         # print("ENEMY DECK: " + enemy_deck)
         win = request.form["win"]
-        table_name = "d_" + request.form["player_deck"].replace(" ", "_")
+        table_name = get_table_name(request.form["player_deck"])
 
         query = "SELECT id FROM {} " \
                 "WHERE player = " \
@@ -148,18 +156,36 @@ def get_all_deck_info():
 
 
 def get_deck_info(deck_name):
-    table_name = "d_" + deck_name.replace(" ", "_")
+    table_name = get_table_name(deck_name)
     db = get_db()
-    query = "SELECT d1.name AS player, d2.name AS enemy, wins, losses, d1.class AS class " \
+    # gets players total wins and losses
+    query = "SELECT SUM(wins) AS wins, SUM(losses) AS losses " \
+            "FROM {};".format(table_name)
+    cur = db.execute(query)
+    temp = cur.fetchone()
+    wins = temp["wins"]
+    losses = temp["losses"]
+
+    query = "SELECT class " \
+            "FROM decks " \
+            "WHERE name = '{}'".format(deck_name)
+    cur = db.execute(query)
+    temp = cur.fetchone()
+    class_name = temp["class"]
+
+    # gets opponent name, wins and losses for each matchup
+    query = "SELECT d2.name AS enemy, wins, losses " \
             "FROM {} " \
             "LEFT JOIN decks d1 ON ({}.player = d1.id) " \
             "LEFT JOIN decks d2 on ({}.enemy = d2.id);".format(table_name, table_name, table_name)
     cur = db.execute(query)
-    deck_info = cur.fetchall()
-    # @TODO: aggregate and format data
-    return deck_info
-    # print(deck_info)
+    matchups = cur.fetchall()
 
+    return [deck_name, class_name, wins, losses, matchups]
+
+
+def get_table_name(deck_name):
+    return "d_" + deck_name.replace(" ", "_")
 
 def get_db():
     if not hasattr(g, "db"):
