@@ -59,5 +59,17 @@ class HwtTestCase(unittest.TestCase):
         rv = self.add_deck_data("test deck", "bad test deck", "win")
         assert b"Game was successfully added." in rv.data
 
+    def test_correct_ratio_formatting(self):
+        self.add_deck("test deck", "Druid")
+        self.add_deck("bad test deck", "Rogue")
+        self.add_deck("other bad test deck", "Mage")
+        for k in range(2):
+            self.add_deck_data("test deck", "bad test deck", "win")
+        self.add_deck_data("test deck", "other bad test deck", "win")
+        rv = self.add_deck_data("test deck", "bad test deck", "loss")
+        assert b'<h4>75.0 %</h4>'
+        assert b'<div class="small-2 columns">66.67 %</div>'
+        assert b'<div class="small-2 columns">0 %</div>'
+
 if __name__ == "__main__":
     unittest.main()
