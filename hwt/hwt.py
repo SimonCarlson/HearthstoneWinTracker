@@ -20,11 +20,6 @@ def show_entries():
     return render_template("show_entries.html", deck_info=decks)
 
 
-def row_to_list(row):
-    for item in row:
-        yield item
-
-
 @app.route("/add_deck", methods=["GET", "POST"])
 def add_deck():
     classes = ["Druid", "Hunter", "Mage", "Paladin", "Priest", "Rogue", "Shaman", "Warlock", "Warrior"]
@@ -38,10 +33,10 @@ def add_deck():
             table_name = get_table_name(request.form["deck_name"])
             query = "CREATE TABLE {} (" \
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," \
-                    "player INTEGER REFERENCES decks(id)," \
-                    "enemy INTEGER REFERENCES decks(id)," \
-                    "wins INTEGER," \
-                    "losses INTEGER" \
+                    "player INTEGER REFERENCES decks(id) ON DELETE CASCADE," \
+                    "enemy INTEGER REFERENCES decks(id) ON DELETE CASCADE," \
+                    "wins INTEGER DEFAULT 0," \
+                    "losses INTEGER DEFAULT 0" \
                     ")".format(table_name)
             db.execute(query)
             db.commit()
@@ -120,6 +115,30 @@ def add_game():
     return render_template("add_game.html", decks=decks)
 
 
+@app.route("/delete_deck", methods=["GET", "POST"])
+def delete_deck():
+    db = get_db()
+    query = "SELECT name FROM decks;"
+    cur = db.execute(query)
+    decks = cur.fetchall()
+
+    if request.method == "POST":
+        table_name = get_table_name(request.form["deck_name"])
+
+        query = "DELETE FROM decks " \
+                "WHERE name = '{}';".format(request.form["deck_name"])
+        db.execute(query)
+
+        query = "DROP TABLE {};".format(table_name)
+        db.execute(query)
+        db.commit()
+
+        flash("Deck was successfully removed.")
+        return redirect(url_for("show_entries"))
+
+    return render_template("delete_deck.html", decks=decks)
+
+
 def get_all_deck_info():
     db = get_db()
     query = "SELECT name FROM decks;"
@@ -147,6 +166,10 @@ def get_deck_info(deck_name):
         ratio = round(wins / (wins + losses) * 100, 2)
     except ZeroDivisionError:
         ratio = 100.0
+    except TypeError:
+        # if there are no wins nor losses there are no matchups recorded
+        # in this case, nothing is returned in order to avoid empty templating
+        return
 
     query = "SELECT class " \
             "FROM decks " \
@@ -197,6 +220,7 @@ def init_db_command():
 
 def connect_db():
     rv = sqlite3.connect(app.config["DATABASE"])
+    rv.execute("PRAGMA FOREIGN_KEYS=1")
     rv.row_factory = sqlite3.Row
     return rv
 

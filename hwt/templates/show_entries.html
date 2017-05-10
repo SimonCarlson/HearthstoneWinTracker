@@ -13,19 +13,19 @@
                 <li class="accordion-item" data-accordion-item>
                     <a href="#" class="accordion-title">
                         <div class="row">
-                            <div class="small-4 columns"><h4>{{ deck["deck_name"] }}</h4></div>
-                            <div class="small-3 columns"><h4>{{ deck["wins"] }}</h4></div>
-                            <div class="small-3 columns"><h4>{{ deck["losses"] }}</h4></div>
-                            <div class="small-2 columns"><h4>{{ deck["ratio"] }} %</h4></div>
+                            <div class="small-4 columns"><h4>{{ deck.deck_name }}</h4></div>
+                            <div class="small-3 columns"><h4>{{ deck.wins }}</h4></div>
+                            <div class="small-3 columns"><h4>{{ deck.losses }}</h4></div>
+                            <div class="small-2 columns"><h4>{{ deck.ratio }} %</h4></div>
                         </div>
                     </a>
                     <div class="accordion-content" data-tab-content>
-                        {% for matchup in deck["matchups"] %}
+                        {% for matchup in deck.matchups %}
                             <div class="row">
-                                <div class="small-4 columns">{{ matchup["enemy"] }}</div>
-                                <div class="small-3 columns">{{ matchup["wins"] }}</div>
-                                <div class="small-3 columns">{{ matchup["losses"] }}</div>
-                                <div class="small-2 columns">{{ matchup["ratio"] }} %</div>
+                                <div class="small-4 columns">{{ matchup.enemy }}</div>
+                                <div class="small-3 columns">{{ matchup.wins }}</div>
+                                <div class="small-3 columns">{{ matchup.losses }}</div>
+                                <div class="small-2 columns">{{ matchup.ratio }} %</div>
                             </div>
                         {% endfor %}
                     </div>

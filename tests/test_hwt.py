@@ -29,8 +29,8 @@ class HwtTestCase(unittest.TestCase):
             win=win
         ), follow_redirects=True)
 
-    def remove_deck(self, deck_name):
-        return self.app.post("/remove_deck", data=dict(
+    def delete_deck(self, deck_name):
+        return self.app.post("/delete_deck", data=dict(
             deck_name=deck_name
         ), follow_redirects=True)
 
@@ -86,7 +86,7 @@ class HwtTestCase(unittest.TestCase):
         self.add_deck("test deck", "Druid")
         self.add_deck("bad test deck", "Rogue")
         self.add_deck_data("test deck", "bad test deck", "win")
-        rv = self.remove_deck("bad test deck")
+        rv = self.delete_deck("bad test deck")
 
         with hwt.app.app_context():
             db = hwt.get_db()
@@ -99,8 +99,12 @@ class HwtTestCase(unittest.TestCase):
             for row in temp:
                 table_names.append(row["name"])
 
+            query = "SELECT * FROM d_test_deck;"
+            cur = db.execute(query)
+            rows = cur.fetchall()
+
         assert "d_bad_test_deck" not in table_names
-        assert b"<h4>0 %</h4>" in rv.data
+        assert len(rows) == 0
 
 
 if __name__ == "__main__":
