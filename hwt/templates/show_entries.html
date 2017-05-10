@@ -13,19 +13,19 @@
                 <li class="accordion-item" data-accordion-item>
                     <a href="#" class="accordion-title">
                         <div class="row">
-                            <div class="small-4 columns"><h4>{{ deck[0].player }}</h4></div>
-                            <div class="small-3 columns"><h4>{{ deck[0].sumwins }}</h4></div>
-                            <div class="small-3 columns"><h4>{{ deck[0].sumlosses }}</h4></div>
-                            <div class="small-2 columns"><h4>{{ deck[0].wins / (deck[0].wins + deck[0].losses) }} %</h4></div>
+                            <div class="small-4 columns"><h4>{{ deck["deck_name"] }}</h4></div>
+                            <div class="small-3 columns"><h4>{{ deck["wins"] }}</h4></div>
+                            <div class="small-3 columns"><h4>{{ deck["losses"] }}</h4></div>
+                            <div class="small-2 columns"><h4>{{ deck["ratio"] }} %</h4></div>
                         </div>
                     </a>
                     <div class="accordion-content" data-tab-content>
-                        {% for games in deck if games %}
+                        {% for matchup in deck["matchups"] %}
                             <div class="row">
-                                <div class="small-4 columns">{{ games.enemy }}</div>
-                                <div class="small-3 columns">{{ games.wins }}</div>
-                                <div class="small-3 columns">{{ games.losses }}</div>
-                                <div class="small-2 columns">{{ games.wins / (games.wins + games.losses) }} %</div>
+                                <div class="small-4 columns">{{ matchup["enemy"] }}</div>
+                                <div class="small-3 columns">{{ matchup["wins"] }}</div>
+                                <div class="small-3 columns">{{ matchup["losses"] }}</div>
+                                <div class="small-2 columns">{{ matchup["ratio"] }} %</div>
                             </div>
                         {% endfor %}
                     </div>
@@ -33,22 +33,5 @@
             {% endfor %}
             </ul>
         {% endif %}
-
-        {#<ul class="accordion" data-accordion data-multi-expand="true" data-allow-all-closed="true">
-            <li class="accordion-item" data-accordion-item>
-                <a href="#" class="accordion-title">Deck name</a>
-                <div class="accordion-content" data-tab-content>
-                    A deck name: 9-0<br>
-                    Another deck: 1-3<br>
-                </div>
-            </li>
-            <li class="accordion-item" data-accordion-item>
-                <a href="#" class="accordion-title">Deck name</a>
-                <div class="accordion-content" data-tab-content>
-                    A deck name: 9-0<br>
-                    Another deck: 1-3<br>
-                </div>
-            </li>
-        </ul>#}
     </div>
 {% endblock %}

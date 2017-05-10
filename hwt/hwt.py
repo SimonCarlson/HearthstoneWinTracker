@@ -165,6 +165,10 @@ def get_deck_info(deck_name):
     temp = cur.fetchone()
     wins = temp["wins"]
     losses = temp["losses"]
+    try:
+        ratio = round(wins / (wins + losses) * 100, 2)
+    except ZeroDivisionError:
+        ratio = 100.0
 
     query = "SELECT class " \
             "FROM decks " \
@@ -174,14 +178,14 @@ def get_deck_info(deck_name):
     class_name = temp["class"]
 
     # gets opponent name, wins and losses for each matchup
-    query = "SELECT d2.name AS enemy, wins, losses " \
+    query = "SELECT d2.name AS enemy, wins, losses, ROUND((1.0 * wins/ (wins + losses)) * 100, 2) AS ratio " \
             "FROM {} " \
             "LEFT JOIN decks d1 ON ({}.player = d1.id) " \
             "LEFT JOIN decks d2 on ({}.enemy = d2.id);".format(table_name, table_name, table_name)
     cur = db.execute(query)
     matchups = cur.fetchall()
 
-    return [deck_name, class_name, wins, losses, matchups]
+    return {"deck_name": deck_name, "class": class_name, "wins": wins, "losses": losses, "ratio": ratio, "matchups": matchups}
 
 
 def get_table_name(deck_name):
